@@ -32,6 +32,27 @@ pub enum CoordinatorMode {
     External { address: String },
 }
 
+/// HTTP/API-server behavior switches that affect route-layer responses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct ApiServerOptions {
+    /// Log a summary line for each completed request.
+    pub enable_log_requests: bool,
+    /// When `true`, include prompt token cache details in response usage.
+    pub enable_prompt_tokens_details: bool,
+    /// When `true`, set `X-Request-Id` on every HTTP response.
+    pub enable_request_id_headers: bool,
+}
+
+impl Default for ApiServerOptions {
+    fn default() -> Self {
+        Self {
+            enable_log_requests: false,
+            enable_prompt_tokens_details: false,
+            enable_request_id_headers: false,
+        }
+    }
+}
+
 /// Normalized runtime configuration for the minimal OpenAI-compatible server.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Config {
@@ -63,10 +84,8 @@ pub struct Config {
     pub default_chat_template_kwargs: Option<HashMap<String, Value>>,
     /// How to serialize `message.content` for chat-template rendering.
     pub chat_template_content_format: ChatTemplateContentFormatOption,
-    /// Log a summary line for each completed request.
-    pub enable_log_requests: bool,
-    /// When `true`, set `X-Request-Id` on every HTTP response.
-    pub enable_request_id_headers: bool,
+    /// HTTP/API-server behavior switches.
+    pub api_server_options: ApiServerOptions,
     /// When `true`, suppress periodic stats logging (throughput, queue depth,
     /// cache usage).
     pub disable_log_stats: bool,

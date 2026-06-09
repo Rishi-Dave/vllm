@@ -8,6 +8,7 @@ use vllm_chat::ChatLlm;
 use vllm_engine_core_client::EngineCoreClient;
 use vllm_engine_core_client::protocol::lora::LoraRequest;
 
+use crate::config::ApiServerOptions;
 use crate::lora::{LoadLoraError, LoraManager, LoraModelResolution, UnloadLoraError};
 use crate::server_info::{ServerInfoConfigFormat, ServerInfoSnapshot};
 
@@ -20,10 +21,8 @@ pub struct AppState {
     served_model_names: Vec<String>,
     /// Shared chat facade used by all requests.
     pub chat: ChatLlm,
-    /// Whether to log a summary line for each completed request.
-    pub enable_log_requests: bool,
-    /// Whether to set X-Request-Id on every HTTP response.
-    pub enable_request_id_headers: bool,
+    /// HTTP/API-server behavior switches.
+    pub api_server_options: ApiServerOptions,
     /// Runtime server information returned by `/server_info`, when available.
     server_info: Option<ServerInfoSnapshot>,
     /// Number of in-flight inference requests currently owned by this frontend.
@@ -49,23 +48,16 @@ impl AppState {
         Self {
             served_model_names,
             chat,
-            enable_log_requests: false,
-            enable_request_id_headers: false,
+            api_server_options: ApiServerOptions::default(),
             server_info: None,
             server_load: AtomicU64::new(0),
             lora_manager: LoraManager::new(),
         }
     }
 
-    /// Enable per-request completion logging.
-    pub fn with_log_requests(mut self, enabled: bool) -> Self {
-        self.enable_log_requests = enabled;
-        self
-    }
-
-    /// Enable X-Request-Id response headers.
-    pub fn with_request_id_headers(mut self, enabled: bool) -> Self {
-        self.enable_request_id_headers = enabled;
+    /// Set HTTP/API-server behavior switches.
+    pub fn with_api_server_options(mut self, options: ApiServerOptions) -> Self {
+        self.api_server_options = options;
         self
     }
 
