@@ -523,6 +523,62 @@ class Qwen3CoderToolParser(ToolParser):
                         len(self.streamed_args_for_tool),
                     )
 
+                # If the function-end token is also present in this
+                # same delta, the close-brace block below would never
+                # run (we would return early). Handle it here so that
+                # the final "}" is included in the emitted payload and
+                # the streaming state is correctly closed.
+                if not self.json_closed and self.function_end_token in tool_text:
+                    self.json_closed = True
+
+                    func_start = tool_text.find(self.tool_call_prefix) + len(
+                        self.tool_call_prefix
+                    )
+                    func_content_end = tool_text.find(
+                        self.function_end_token, func_start
+                    )
+                    if func_content_end != -1:
+                        func_content = tool_text[func_start:func_content_end]
+                        try:
+                            parsed_tool = self._parse_xml_function_call(
+                                func_content,
+                            )
+                            if parsed_tool and self.current_tool_index < len(
+                                self.prev_tool_call_arr
+                            ):
+                                self.prev_tool_call_arr[self.current_tool_index][
+                                    "arguments"
+                                ] = parsed_tool.function.arguments
+                        except Exception:
+                            logger.debug(
+                                "Failed to parse tool call during streaming: %s",
+                                tool_text,
+                                exc_info=True,
+                            )
+
+                    if self.current_tool_index < len(self.streamed_args_for_tool):
+                        self.streamed_args_for_tool[self.current_tool_index] += "}"
+                    else:
+                        logger.warning(
+                            "streamed_args_for_tool out of sync: index=%d len=%d",
+                            self.current_tool_index,
+                            len(self.streamed_args_for_tool),
+                        )
+
+                    self.in_function = False
+                    self.accumulated_params = {}
+                    self.in_param = False
+                    self.param_count = 0
+
+                    return DeltaMessage(
+                        tool_calls=[
+                            DeltaToolCall(
+                                index=self.current_tool_index,
+                                function=DeltaFunctionCall(arguments=combined + "}"),
+                            )
+                        ]
+                    )
+
                 return DeltaMessage(
                     tool_calls=[
                         DeltaToolCall(

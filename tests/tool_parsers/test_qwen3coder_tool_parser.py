@@ -8,6 +8,7 @@ import pytest
 from openai.types.responses.function_tool import FunctionTool
 from xgrammar import StructuralTag
 
+from tests.tool_parsers.utils import run_tool_extraction_streaming
 from vllm.entrypoints.openai.chat_completion.protocol import (
     ChatCompletionNamedFunction,
     ChatCompletionNamedToolChoiceParam,
@@ -1500,3 +1501,54 @@ def test_adjust_request_required_prefers_structural_tag(
     out = qwen3_tool_parser.adjust_request(req)
     assert out.structured_outputs is not None
     assert out.structured_outputs.structural_tag is not None
+
+
+def test_streaming_param_and_function_end_single_chunk(qwen3_tokenizer):
+    """Regression: closing </parameter> and </function> arrive in the same
+    delta — the reconstructed arguments must include the closing '}'.
+
+    Before the fix, the ``if json_fragments:`` branch returned early,
+    never reaching the close-brace block, so the streamed arguments ended
+    with ``"page": 1`` instead of the valid JSON ``{"page": 1}``.
+    """
+    tools = [
+        ChatCompletionToolsParam(
+            type="function",
+            function={
+                "name": "get_page",
+                "description": "Fetch a page by number",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "page": {"type": "integer"},
+                    },
+                    "required": ["page"],
+                },
+            },
+        )
+    ]
+
+    parser = Qwen3CoderToolParser(qwen3_tokenizer, tools=tools)
+    request = ChatCompletionRequest(model=MODEL, messages=[], tools=tools)
+
+    # The key scenario: the final delta contains both </parameter> and
+    # </function> in the same chunk, which previously caused the closing
+    # "}" to be dropped.
+    deltas = [
+        "<tool_call>",
+        "\n<function=get_page>",
+        "\n",  # triggers json_started -> sends "{"
+        "<parameter=page>\n1\n</parameter>\n</function>",
+        "\n</tool_call>",
+    ]
+
+    reconstructor = run_tool_extraction_streaming(
+        parser,
+        deltas,
+        request,
+        assert_one_tool_per_delta=False,
+    )
+
+    assert len(reconstructor.tool_calls) == 1
+    args = json.loads(reconstructor.tool_calls[0].function.arguments)
+    assert args == {"page": 1}
