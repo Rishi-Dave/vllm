@@ -267,3 +267,19 @@ def test_regex_timeout_handling(streaming: bool, default_tokenizer: TokenizerLik
         assert content == fake_problematic_input
         assert len(tool_calls) == 0
         mock_regex.match.assert_called_once()
+
+
+def test_llama4_inherits_pythonic_base():
+    """Regression: ensure refactor keeps Llama4PythonicToolParser as a subclass
+    of PythonicToolParser so shared logic is consolidated."""
+    from vllm.tool_parsers.llama4_pythonic_tool_parser import (
+        Llama4PythonicToolParser,
+    )
+    from vllm.tool_parsers.pythonic_tool_parser import PythonicToolParser
+
+    assert issubclass(Llama4PythonicToolParser, PythonicToolParser)
+    # Hooks exist on base, overridden on Llama4.
+    assert (
+        Llama4PythonicToolParser._preprocess_model_output
+        is not PythonicToolParser._preprocess_model_output
+    )

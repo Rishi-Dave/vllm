@@ -66,12 +66,30 @@ class PythonicToolParser(ToolParser):
     def current_tool_index(self, value: int) -> None:
         self.current_tool_id = value
 
+    # --- Preprocessing hooks (override in subclasses for model-specific tokens)
+
+    def _preprocess_model_output(self, model_output: str) -> str:
+        """Strip any model-specific sentinel tokens before parsing."""
+        return model_output
+
+    def _preprocess_streaming_text(self, current_text: str) -> str:
+        """Strip any model-specific sentinel tokens from streaming text."""
+        return current_text
+
+    def _streaming_prefix_allowed(self, current_text: str) -> bool:
+        """Return True if the current streaming text looks like a tool call."""
+        return current_text.startswith("[")
+
+    # ---
+
     def extract_tool_calls(
         self, model_output: str, request: ChatCompletionRequest
     ) -> ExtractedToolCallInformation:
         """
         Extract the tool calls from a complete model response.
         """
+        model_output = self._preprocess_model_output(model_output)
+
         is_tool_call_pattern = False
         try:
             is_tool_call_pattern = (
@@ -124,10 +142,11 @@ class PythonicToolParser(ToolParser):
         delta_token_ids: Sequence[int],
         request: ChatCompletionRequest,
     ) -> DeltaMessage | None:
-        if not current_text.startswith("["):
+        if not self._streaming_prefix_allowed(current_text):
             return DeltaMessage(content=delta_text)
 
         try:
+            current_text = self._preprocess_streaming_text(current_text)
             valid_and_added_text = make_valid_python(current_text)
             if valid_and_added_text is None:
                 return None
