@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 """
-GLM-4 Tool Call Parser with incremental string streaming support.
+Poolside V1 Tool Call Parser with incremental string streaming support.
 
 This parser fixes the streaming issue reported in Issue #32829 where long string
 parameters (e.g., file content with 4000+ characters of code) are buffered until
@@ -48,7 +48,7 @@ logger = init_logger(__name__)
 
 
 class PoolsideV1ToolParser(ToolParser):
-    """Tool parser for GLM-4 models with incremental string streaming.
+    """Tool parser for Poolside V1 models with incremental string streaming.
 
     This parser emits tool-call deltas incrementally as arguments arrive.
     For string-type parameters, content is streamed character-by-character

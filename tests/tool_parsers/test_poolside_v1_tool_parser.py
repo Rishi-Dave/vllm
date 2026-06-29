@@ -215,3 +215,20 @@ def test_responses_extract_tool_calls_with_flat_tools() -> None:
     assert result.tools_called
     args = json.loads(result.tool_calls[0].function.arguments)
     assert args["content"] == content
+
+
+# ---------------------------------------------------------------------------
+# Regression: docstrings must reference Poolside V1, not GLM-4
+# ---------------------------------------------------------------------------
+
+
+def test_docstrings_reference_poolside_v1():
+    """Regression: docstrings reference Poolside V1, not GLM-4."""
+    import vllm.tool_parsers.poolside_v1_tool_parser as module
+
+    assert module.__doc__ is not None
+    assert "GLM-4" not in module.__doc__
+    assert "Poolside V1" in module.__doc__
+    assert PoolsideV1ToolParser.__doc__ is not None
+    assert "GLM-4" not in PoolsideV1ToolParser.__doc__
+    assert "Poolside V1" in PoolsideV1ToolParser.__doc__
