@@ -279,12 +279,12 @@ class Step3ToolParser(ToolParser):
                 continue
 
             call_content = part.split(self.TOOL_CALL_END, 1)[0]
-            if self.TOOL_SEP not in call_content:
-                continue
 
-            type_part, invoke_part = call_content.split(self.TOOL_SEP, 1)
-            if type_part.strip() != "function":
-                continue
+            # Note: step3 places the steptml:invoke XML directly between
+            # TOOL_CALL_BEGIN and TOOL_CALL_END. There is no per-call
+            # TOOL_SEP-delimited "type" prefix; TOOL_SEP is only used as
+            # a between-tool separator at the outer level.
+            invoke_part = call_content.strip()
 
             function_name, params_dict = self._parse_steptml_invoke(invoke_part)
 

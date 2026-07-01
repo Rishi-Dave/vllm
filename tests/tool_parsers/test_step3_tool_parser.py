@@ -88,24 +88,11 @@ class TestStep3ToolParser(ToolParserTests):
             parallel_tool_calls_count=2,
             parallel_tool_calls_names=["get_weather", "get_time"],
             # xfail markers
-            xfail_nonstreaming={
-                "test_single_tool_call_simple_args": (
-                    "Step3 parser non-streaming has bugs"
-                ),
-                "test_parallel_tool_calls": ("Step3 parser non-streaming has bugs"),
-                "test_various_data_types": "Step3 parser non-streaming has bugs",
-                "test_empty_arguments": "Step3 parser non-streaming has bugs",
-                "test_surrounding_text": "Step3 parser non-streaming has bugs",
-                "test_escaped_strings": "Step3 parser non-streaming has bugs",
-            },
+            xfail_nonstreaming={},
             xfail_streaming={
                 "test_parallel_tool_calls": (
                     "Step3 parser has significant bugs in both streaming "
                     "and non-streaming"
-                ),
-                "test_streaming_reconstruction": (
-                    "Step3 parser non-streaming has bugs, so streaming "
-                    "doesn't match non-streaming"
                 ),
             },
             supports_typed_arguments=False,
