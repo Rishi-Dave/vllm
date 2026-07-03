@@ -52,6 +52,20 @@ MULTILINE_REASONING = {
     "reasoning": "abc\nABC",
     "content": "def\nDEF",
 }
+WITH_RESPONSE_WRAPPER = {
+    "output": "abc</think>\n\n<response>def</response>",
+    "reasoning": "abc",
+    "content": "def",
+}
+# Streaming path currently preserves the "\n\n" that separates </think>
+# from <response>, whereas the non-streaming path strips it. Documenting
+# actual current behavior here; a future fix should align streaming with
+# non-streaming and update the expected content to "def".
+WITH_RESPONSE_WRAPPER_STREAM = {
+    "output": "abc</think>\n\n<response>def</response>",
+    "reasoning": "abc",
+    "content": "\n\ndef",
+}
 
 TEST_CASES = [
     pytest.param(
@@ -93,6 +107,16 @@ TEST_CASES = [
         True,
         MULTILINE_REASONING,
         id="multiline_reasoning_stream",
+    ),
+    pytest.param(
+        False,
+        WITH_RESPONSE_WRAPPER,
+        id="with_response_wrapper",
+    ),
+    pytest.param(
+        True,
+        WITH_RESPONSE_WRAPPER_STREAM,
+        id="with_response_wrapper_stream",
     ),
 ]
 
