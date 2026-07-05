@@ -52,6 +52,21 @@ MULTILINE_REASONING = {
     "reasoning": "abc\nABC",
     "content": "def\nDEF",
 }
+# With </think> followed by <response>...</response> wrapper (primary
+# documented format). Exercises response-stripping in extract_reasoning.
+WITH_THINK_RESPONSE_WRAPPED = {
+    "output": "abc\n</think>\n\n<response>\ndef\n</response>\n",
+    "reasoning": "abc\n",
+    "content": "\ndef\n",
+}
+# Same input, streaming path. The streaming parser currently emits
+# extra surrounding newlines compared to the non-streaming path;
+# this test locks in that behavior for regression detection.
+WITH_THINK_RESPONSE_WRAPPED_STREAM = {
+    "output": "abc\n</think>\n\n<response>\ndef\n</response>\n",
+    "reasoning": "abc\n",
+    "content": "\n\n\ndef\n\n",
+}
 
 TEST_CASES = [
     pytest.param(
@@ -93,6 +108,16 @@ TEST_CASES = [
         True,
         MULTILINE_REASONING,
         id="multiline_reasoning_stream",
+    ),
+    pytest.param(
+        False,
+        WITH_THINK_RESPONSE_WRAPPED,
+        id="with_think_response_wrapped",
+    ),
+    pytest.param(
+        True,
+        WITH_THINK_RESPONSE_WRAPPED_STREAM,
+        id="with_think_response_wrapped_stream",
     ),
 ]
 
